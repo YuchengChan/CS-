@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()  
 const db = require('../db.js')  
 const axios = require('axios')		
+const { sendToWechatBot } = require('../wechatBot.js')
 
 const cookie = 'Device-Id=G0gvyUByJ7Kg7cRWznYG; remember_me=U1091788859|95ImIR8lCpgL3nqz7PhzMehNaOxwOzAC; session=1-BGXz-hYynwvX5EMSP1lRorMuDF_81EB714CRh3tb8-za2044591971; Locale-Supported=zh-Hans; game=csgo; csrf_token=IjgxYmNjYjMxODE0NTJiZTcwM2RlM2E1MmY3Zjk3ZDJkZWZmOWU2Zjci.aQwJLg.w_cjQvRavjsnN6RUWTzcftBfIhc'
 
@@ -132,6 +133,22 @@ router.post('/task/start-search', async function(req, res) {
       if (apiPrice <= dbPrice || apiWear <= dbWear) {
         // 满足条件，同时返回数据库查询的任务数据和接口返回的商品数据
         console.log(`商品ID ${goodsId} 满足条件，返回数据库任务数据和查询接口的商品数据`)
+        
+        // 构建商品数据并推送到企业微信机器人
+        const productData = {
+          id: goodsId,
+          name: task.name,
+          price: apiPrice,
+          buyPrice: task.price,
+          wear: apiWear,
+          link: `https://buff.163.com/goods/${goodsId}`
+        };
+        
+        // 异步推送消息，不阻塞响应
+        sendToWechatBot(productData).catch(err => {
+          console.error('推送消息失败，不影响业务逻辑:', err);
+        });
+        
         return res.send({
           code: 200,
           message: '找到满足条件的商品',
