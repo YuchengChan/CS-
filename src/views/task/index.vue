@@ -16,6 +16,15 @@
                 <el-form-item label="价格" :label-width="formLabelWidth">
                     <el-input v-model="task.price" autocomplete="off" />
                 </el-form-item>
+                <el-form-item label="购买平台" :label-width="formLabelWidth">
+                    <el-radio-group v-model="task.platform" size="small">
+                        <el-radio label="BUFF">BUFF</el-radio>
+                        <el-radio label="C5">C5</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="购买连接" :label-width="formLabelWidth">
+                    <el-input v-model="task.link" autocomplete="off" />
+                </el-form-item>
             </el-form>
             <template #footer>
                 <div class="dialog-footer">
@@ -31,6 +40,7 @@
             <el-table-column prop="id" label="商品ID" width="220" />
             <el-table-column prop="wear" label="磨损" width="220" />              
             <el-table-column prop="price" label="售卖价格" width="120" class-name="price-column"/>  
+            <el-table-column prop="platform" label="购买平台" width="120" />
             <el-table-column label="操作" width="120" >                           
                 <template #default="scope">
                     <el-button type="danger" size="mini" @click="deleteTask(scope.row)">删除</el-button>
@@ -49,13 +59,18 @@ import { ref, onMounted } from 'vue'
 import request from '../../request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { store } from '../../store'
+// 导入平台特定的请求模块
+import { executeBuffSearch, startBuffTask } from '../../utils/buffRequest'
+import { executeC5Search, startC5Task } from '../../utils/c5Request'
 
 const dialogFormVisible = ref(false)
 const task = ref({
     name: '',
     id: null,
     wear: null,
-    price: null
+    price: null,
+    platform: 'C5',
+    link: ''
 })
 const tableData = ref([])
 // 现在使用store中的taskTimers，不再使用局部状态
@@ -123,55 +138,22 @@ const deleteTask = async (row) => {
      } 
  }
 
-// 执行搜索任务的函数
+// 执行搜索任务的函数 - 根据平台调用相应的模块函数
 const executeSearchTask = async (row) => {
-    try {
-        // 注意：这里API路径应该是'/api/task/start-search'而不是'/api/task/start'
-        const response = await request.post('/api/task/start-search', { id: row.id });
-        
-        if (response.data.code === 200) {
-            ElMessage({
-                showClose: true,
-                message: `任务 ${row.name} 搜索成功: ${response.data.message}`,
-                type: 'success',
-            })
-            // 如果找到满足条件的商品，将数据存储到store中
-            console.log('找到满足条件的商品:', response);
-            
-            // 处理后端返回的数据，包含task和item两个部分
-            const { task: dbTask, item: apiItem } = response.data.data;
-            
-            // 构建商品数据对象，包含shop.vue表格需要的字段
-            const productData = {
-                id: `${dbTask.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // 使用任务ID+时间戳+随机字符串确保唯一标识
-                name: dbTask.name,
-                img: apiItem.asset_info?.info?.icon_url || apiItem.img || '', // 使用asset_info.info.icon_url作为图片URL
-                wear: apiItem.asset_info?.paintwear || dbTask.wear,
-                price: apiItem.price,
-                buyPrice: dbTask.price, // 购买价格从任务设置中获取
-                link: `https://buff.163.com/goods/${dbTask.id}`, // 构建购买链接，确保apiItem.id是简单数字格式的商品ID（如示例中的34830）
-                searchTime: new Date(), // 添加搜索时间
-                originalItemId: apiItem.id // 保留原始商品ID用于识别同一商品
-            };
-            
-            // 存储到全局store中
-            store.addProduct(productData);
-        } else if (response.data.code === 201) {
-            console.log(`任务 ${row.name} 未找到满足条件的商品，继续搜索...`);
-        } else {
-            ElMessage({
-                showClose: true,
-                message: response.data.message || '搜索任务执行失败',
-                type: 'warning',
-            })
-            console.log(`任务 ${row.name} 执行状态:`, response.data);
-        }
-    } catch (error) {
-        console.error(`任务 ${row.name} 执行失败:`, error);
+    // 根据平台选择不同的请求处理模块
+    const platform = row.platform || 'BUFF'; // 默认使用BUFF平台
+    
+    console.log(`开始执行${platform}平台的搜索任务: ${row.name}`);
+    
+    // 调用相应平台的搜索函数
+    if (platform === 'C5') {
+        await executeC5Search(row);
+    } else {
+        await executeBuffSearch(row);
     }
 }
 
-// 启动任务定时器
+// 启动任务定时器 - 根据平台调用相应的模块函数
 const startTask = async (row) => {
     try {
         // 检查任务是否已经在运行
@@ -184,24 +166,14 @@ const startTask = async (row) => {
             return;
         }
         
-        // 立即执行一次搜索
-        await executeSearchTask(row);
+        // 根据平台选择不同的启动任务方法
+        const platform = row.platform || 'BUFF';
         
-        // 设置定时器，每15秒执行一次
-        const timerId = setInterval(() => {
-            executeSearchTask(row);
-        }, 15000);
-        
-        // 保存到全局store中
-        store.setTaskTimer(row.id, timerId);
-        
-        ElMessage({
-            showClose: true,
-            message: `任务 ${row.name} 已启动，将每15秒自动搜索一次`,   
-            type: 'success',
-        })
-        
-        console.log(`任务 ${row.name} 定时器已启动，ID:`, timerId);
+        if (platform === 'C5') {
+            await startC5Task(row);
+        } else {
+            await startBuffTask(row);
+        }
     } catch (error) {
         console.error('启动任务定时器失败:', error);
         ElMessage({
@@ -239,7 +211,11 @@ const stopTask = (row) => {
 const fetchTasks = async () => {
     try {
         const response = await request.get('/api/task/list');
-        tableData.value = response.data || [];
+        // 将platform的数字值转换为对应的平台名称
+        tableData.value = (response.data || []).map(task => ({
+            ...task,
+            platform: task.platform === 1 ? 'C5' : 'BUFF'
+        }));
         console.log('获取的任务列表:', tableData.value);
     } catch (error) {
         console.error('获取任务列表失败:', error);

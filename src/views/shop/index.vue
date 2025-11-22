@@ -7,6 +7,11 @@
         
         <el-table :data="tableData" border style="width: 100%">
             <el-table-column prop="name" label="名称" width="320" />
+            <el-table-column prop="platform" label="购买平台" width="120">
+                <template #default="scope">
+                    {{ scope.row.platform === 1 ? 'C5' : 'BUFF' }}
+                </template>
+            </el-table-column>
             <el-table-column label="图片" width="150" >
                 <template #default="scope">
                     <img :src="scope.row.img" alt="商品图片" style="width: 100px; height: 100px; object-fit: cover;" />
@@ -22,7 +27,7 @@
             </el-table-column>
             <el-table-column label="操作" width="100">
                 <template #default="scope">
-                    <el-button type="primary" size="small" @click="openLink(scope.row.link)">购买</el-button>
+                    <el-button type="primary" size="small" @click="openLink(scope.row.link, scope.row.platform)">购买</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -36,21 +41,34 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { ElTable, ElTableColumn, ElButton } from 'element-plus'
+import { ElTable, ElTableColumn, ElButton, ElMessage } from 'element-plus'
 import 'element-plus/dist/index.css'
 import { store } from '../../store'
 
 // 计算属性，从store获取商品数据
-const tableData = computed(() => store.products)
+const tableData = computed(() => {
+  return store.products;
+})
 
 // 组件挂载时打印store中的数据用于调试
 onMounted(() => {
-  console.log('Shop组件挂载时的商品数据:', tableData.value)
+  console.log('Shop组件挂载时的商品数据:', store.products)
 })
 
-const openLink = (link) => {
-  // 直接打开链接，因为link字段已经是完整的链接格式
-  window.open(link, '_blank')
+const openLink = (link, platform) => {
+  // 当link字段为空或无效时，显示错误提示
+  if (!link) {
+    ElMessage.warning('该商品暂无可用的购买链接')
+    return
+  }
+  
+  // 当平台为C5(platform=1)时，使用数据库中的link字段值作为购买链接
+  if (platform === 1) {
+    window.open(link, '_blank')
+  } else {
+    // BUFF平台(platform=0)的处理保持不变
+    window.open(link, '_blank')
+  }
 }
 
 // 清空商品数据的方法

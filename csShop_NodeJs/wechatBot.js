@@ -17,11 +17,13 @@ async function sendToWechatBot(productData) {
         content: `## 🔔 找到符合条件的商品\n` +
                  `**商品名称**: ${productData.name || '未知商品'}\n` +
                  `**商品ID**: ${productData.id || '未知ID'}\n` +
+                 `**当前平台**: ${productData.platform || 'BUFF'}\n` +
                  `**当前价格**: <font color="info">¥${productData.price || 0}</font>\n` +
                  `**目标价格**: <font color="comment">¥${productData.buyPrice || 0}</font>\n` +
                  `**磨损值**: ${productData.wear || '未知'}\n` +
                  `**搜索时间**: ${new Date().toLocaleString('zh-CN')}\n` +
-                 `**购买链接**: [点击购买](${productData.link || '#'})\n` +
+                 `**购买链接**: [点击打开商品详情](${productData.link || '#'})\n` +
+                 `**提示**: <font color="warning">${productData.platform === 'C5' ? '请点击链接打开C5网页端进行购买' : 'iOS用户请长按链接选择"在Safari中打开"，然后可跳转至BUFF APP'}</font>\n` +
                  `\n> 此消息由商品监控系统自动推送`
       }
     };
