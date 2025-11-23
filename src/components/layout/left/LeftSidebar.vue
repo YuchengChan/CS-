@@ -11,6 +11,9 @@
         <el-menu-item index="/task">
           <span>任务列表</span>
         </el-menu-item>
+        <el-menu-item index="/price">
+          <span>价格对比</span>
+        </el-menu-item>
         <el-menu-item index="/user">
           <span>用户设置</span>
         </el-menu-item>

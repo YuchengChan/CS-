@@ -82,7 +82,7 @@ export const startC5Task = async (row) => {
     // 设置定时器，每20秒执行一次
     const timerId = setInterval(() => {
       executeC5Search(row);
-    }, 20000);
+    }, 15000);
     
     // 保存到全局store中
     store.setTaskTimer(row.id, timerId);

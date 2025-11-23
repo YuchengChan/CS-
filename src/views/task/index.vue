@@ -41,7 +41,7 @@
             <el-table-column prop="wear" label="磨损" width="220" />              
             <el-table-column prop="price" label="售卖价格" width="120" class-name="price-column"/>  
             <el-table-column prop="platform" label="购买平台" width="120" />
-            <el-table-column label="操作" width="120" >                           
+            <el-table-column label="操作" width="250" >                           
                 <template #default="scope">
                     <el-button type="danger" size="mini" @click="deleteTask(scope.row)">删除</el-button>
                     <el-button type="primary" size="mini" @click="editTask(scope.row)">编辑</el-button>

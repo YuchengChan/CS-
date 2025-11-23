@@ -20,6 +20,12 @@ const routes = [
         meta: { title: '任务列表' }
       },
       {
+        path: 'price',
+        name: 'Price',
+        component: () => import('@/views/price/index.vue'),
+        meta: { title: '价格对比' }
+      },
+      {
         path: 'user',
         name: 'User',
         component: () => import('@/views/user/index.vue'),
