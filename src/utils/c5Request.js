@@ -28,18 +28,25 @@ export const executeC5Search = async (row) => {
       const { task: dbTask, item: apiItem } = response.data.data;
       
       // 构建C5平台商品数据对象，包含shop.vue表格需要的字段
+      // 添加匹配标记：如果商品满足磨损条件，wearIsMatch为true；如果满足价格条件，priceIsMatch为true
+      const currentWear = apiItem.wear || dbTask.wear;
+      const currentPrice = apiItem.price;
+      
       const productData = {
         id: `${dbTask.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // 使用任务ID+时间戳+随机字符串确保唯一标识
         name: dbTask.name,
         img: apiItem.img || '', // C5平台可能有不同的图片字段，这里做兼容处理
-        wear: apiItem.wear || dbTask.wear, // C5平台可能有不同的磨损值字段，这里做兼容处理
-        price: apiItem.price,
+        wear: currentWear, // C5平台可能有不同的磨损值字段，这里做兼容处理
+        price: currentPrice,
         buyPrice: dbTask.price, // 购买价格从任务设置中获取
         // C5平台的购买链接，使用数据库中的link字段值
         link: dbTask.link || '',
         searchTime: new Date(), // 添加搜索时间
         originalItemId: apiItem.id || dbTask.id, // 保留原始商品ID用于识别同一商品
-        platform: 1 // 明确平台信息，1表示C5平台
+        platform: 1, // 明确平台信息，1表示C5平台
+        // 添加匹配标记
+        wearIsMatch: dbTask.wear && currentWear && parseFloat(currentWear) <= parseFloat(dbTask.wear),
+        priceIsMatch: dbTask.price && currentPrice && parseFloat(currentPrice) <= parseFloat(dbTask.price)
       };
       
       // 存储到全局store中
@@ -79,17 +86,17 @@ export const startC5Task = async (row) => {
     // 立即执行一次搜索
     await executeC5Search(row);
     
-    // 设置定时器，每20秒执行一次
+    // 设置定时器，每20秒执行一次搜索
     const timerId = setInterval(() => {
       executeC5Search(row);
-    }, 15000);
+    }, 16000);
     
     // 保存到全局store中
     store.setTaskTimer(row.id, timerId);
     
     ElMessage({
       showClose: true,
-      message: `C5任务 ${row.name} 已启动，将每30秒自动搜索一次`,     
+      message: `C5任务 ${row.name} 已启动，将每20秒自动搜索一次`,         
       type: 'success',
     })
     

@@ -28,18 +28,25 @@ export const executeBuffSearch = async (row) => {
       const { task: dbTask, item: apiItem } = response.data.data;
       
       // 构建BUFF平台商品数据对象，包含shop.vue表格需要的字段
+      // 添加匹配标记：如果商品满足磨损条件，wearIsMatch为true；如果满足价格条件，priceIsMatch为true
+      const currentWear = apiItem.asset_info?.paintwear || dbTask.wear;
+      const currentPrice = apiItem.price;
+      
       const productData = {
         id: `${dbTask.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // 使用任务ID+时间戳+随机字符串确保唯一标识
         name: dbTask.name,
         img: apiItem.asset_info?.info?.icon_url || apiItem.img || '', // 使用asset_info.info.icon_url作为图片URL
-        wear: apiItem.asset_info?.paintwear || dbTask.wear,
-        price: apiItem.price,
+        wear: currentWear,
+        price: currentPrice,
         buyPrice: dbTask.price, // 购买价格从任务设置中获取
         // BUFF平台的购买链接
         link: `https://buff.163.com/goods/${dbTask.id}`,
         searchTime: new Date(), // 添加搜索时间
         originalItemId: apiItem.id, // 保留原始商品ID用于识别同一商品
-        platform: 0 // 明确平台信息，0表示BUFF平台
+        platform: 0, // 明确平台信息，0表示BUFF平台
+        // 添加匹配标记
+        wearIsMatch: dbTask.wear && currentWear && parseFloat(currentWear) <= parseFloat(dbTask.wear),
+        priceIsMatch: dbTask.price && currentPrice && parseFloat(currentPrice) <= parseFloat(dbTask.price)
       };
       
       // 存储到全局store中

@@ -141,7 +141,7 @@ router.post('/task/start-search', async function(req, res) {
         appId: 730,
         marketHashName: task.name, // 从数据库中获取商品名称
         maxPrice: task.price * 100, // 价格转换为分
-        delivery: 2
+        delivery: 0
       }
       
       console.log(`正在请求C5平台商品，URL: ${url}`)
